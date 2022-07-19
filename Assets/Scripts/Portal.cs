@@ -8,6 +8,7 @@ public class Portal : Collidable
     {
         if(coll.name == "Player")
         {
+            GameManager.instance.SaveState();
             // Teleport the player to a random scene from the array
             string sceneName = sceneNames[Random.Range(0, sceneNames.Length)];
             UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
