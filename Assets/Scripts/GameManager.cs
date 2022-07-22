@@ -14,14 +14,18 @@ public class GameManager : MonoBehaviour
         if (GameManager.instance != null)
         {
             Destroy(gameObject);
+            Destroy(player.gameObject);
+            Destroy(floatingTextManager.gameObject);
+            Destroy(hud);
+            Destroy(menu);
             return;
         }
 
-        PlayerPrefs.DeleteAll();    // has to be manually put and then erased every time we want a clean state
+        //PlayerPrefs.DeleteAll();    // has to be manually put and then erased every time we want a clean state
 
         instance = this;
-        SceneManager.sceneLoaded += LoadState;
-        DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded -= LoadState;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     // Resources
@@ -34,6 +38,10 @@ public class GameManager : MonoBehaviour
     public Player player;
     public Weapon weapon;
     public FloatingTextManager floatingTextManager;
+    public RectTransform hitPointBar;
+    public Animator deathMenuAnim;
+    public GameObject hud;
+    public GameObject menu;
 
     // Logic
     public int escudos;
@@ -60,6 +68,13 @@ public class GameManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    // Hitpoint bar
+    public void OnHitPointChange()
+    {
+        float ratio = (float)player.hitPoint / (float)player.maxHitPoint;
+        hitPointBar.localScale = new Vector3(1, ratio, 1);
     }
 
     private void Update()
@@ -111,8 +126,23 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Level Up");
         player.OnLevelUp();
+        OnHitPointChange();
     }
 
+    // On Scene Loaded
+    public void OnSceneLoaded(Scene s, LoadSceneMode mode)
+    {
+        // Spawn the player on the position of an empty gameobject
+        player.transform.position = GameObject.Find("SpawnPoint").transform.position;
+    }
+
+    // Death Menu and Respawn
+    public void Respawn()
+    {
+        deathMenuAnim.SetTrigger("Hide");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+        player.Respawn();
+    }
 
     // Save state
     /*
@@ -132,12 +162,12 @@ public class GameManager : MonoBehaviour
         s += weapon.weaponLevel.ToString();
 
         PlayerPrefs.SetString("SaveState", s);
-
-        Debug.Log("SaveState");
     }
 
     public void LoadState(Scene s, LoadSceneMode mode)
     {
+        SceneManager.sceneLoaded -= LoadState;
+
         if (!PlayerPrefs.HasKey("SaveState"))
             return;
 
@@ -155,7 +185,5 @@ public class GameManager : MonoBehaviour
 
         // Change weapon level
         weapon.SetWeaponLevel(int.Parse(data[3]));
-
-        Debug.Log("LoadState");
     }
 }
